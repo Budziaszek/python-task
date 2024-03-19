@@ -1,6 +1,7 @@
 import os
-from typing import Optional, Any, Generator, List
+from typing import Optional, Any, Generator
 
+import numpy as np
 import pandas as pd
 
 
@@ -36,7 +37,9 @@ files = find_files(prefix=filename_prefix, directory=data_directory)
 df = pd.concat([read_file(file, sheet_name=sheet_name) for file in files])
 
 df.drop_duplicates(inplace=True)
-print(f"Number of null values:'\n {df.isnull().sum()}\n")
 
+print(f"Number of null values:\n {df.isnull().sum()}\n")
+numeric_columns = df.select_dtypes(include=np.number).columns
+df[numeric_columns] = df[numeric_columns].fillna(value=1337)
 
 
