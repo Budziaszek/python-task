@@ -3,6 +3,16 @@ from typing import Optional, Any, Generator
 
 import numpy as np
 import pandas as pd
+from pandas.tseries.offsets import CDay, CustomBusinessDay
+from pandas.tseries.holiday import (
+    Holiday,
+    GoodFriday,
+    EasterMonday,
+    AbstractHolidayCalendar,
+    next_monday,
+    next_monday_or_tuesday,
+    MO
+)
 
 
 def find_files(prefix: str, directory: str) -> Generator[str, None, None]:
@@ -29,6 +39,28 @@ def read_file(filepath: str, sheet_name: Optional[str] = None) -> pd.DataFrame |
         raise ValueError(f"File extension '{file_extension}' is not supported.")
 
 
+class HolidaysUK(AbstractHolidayCalendar):
+    rules = [
+        Holiday('New Years Day', month=1, day=1, observance=next_monday),
+        GoodFriday,
+        EasterMonday,
+        Holiday('Early May Bank Holiday', month=5, day=1, offset=pd.DateOffset(weekday=MO(1))),
+        Holiday('Spring Bank Holiday', month=5, day=31, offset=pd.DateOffset(weekday=MO(-1))),
+        Holiday('Summer Bank Holiday', month=8, day=31, offset=pd.DateOffset(weekday=MO(-1))),
+        Holiday('Christmas Day', month=12, day=25, observance=next_monday),
+        Holiday('Boxing Day', month=12, day=26, observance=next_monday_or_tuesday)
+    ]
+
+
+def count_business_days(business_days: CustomBusinessDay, start_date: pd.Timestamp, end_date: pd.Timestamp):
+    """
+    Counts business days between two dates.
+    """
+    if pd.isnull(start_date) or pd.isnull(end_date):
+        return np.datetime64('NaT')
+    return len(pd.date_range(start_date, end_date, freq=business_days)) - 1
+
+
 filename_prefix = "Table_"
 data_directory = ".\\data"
 sheet_name = "Sheet1"  # Always get data from Sheet1, we can potentially use all sheets, first sheet etc.
@@ -46,6 +78,10 @@ acctg_date_column = 'Acctg Date'
 date_column = 'Date'
 date_columns = [acctg_date_column, date_column]
 df[date_columns] = df[date_columns].apply(pd.to_datetime)
-df['Period'] = df['Acctg Date'] - df['Date']
-
+df['Period'] = df[acctg_date_column] - df[date_column]
+business_days = CDay(calendar=HolidaysUK())
+df["Period Business Days"] = df.apply(
+    lambda row: count_business_days(business_days=business_days,
+                                    start_date=row[acctg_date_column],
+                                    end_date=row[date_column]), axis=1)
 
