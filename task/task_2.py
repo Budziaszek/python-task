@@ -8,4 +8,4 @@ if __name__ == "__main__":
     sheet_name = "Data"
     df = read_file(os.path.join(data_directory, filename), sheet_name=sheet_name)
 
-    print(df.head())
+    df.melt(id_vars=["MPAN", "Date"], var_name="Hour", value_name="Value")
