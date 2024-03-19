@@ -1,14 +1,39 @@
+import os
+from typing import Optional, Any, Generator
+
 import pandas as pd
 
-# Read files
-table_0 = pd.ExcelFile("data/Table_0.xlsx")
-table_1 = pd.read_csv("data/Table_1.csv")
-table_2 = pd.ExcelFile("data/Table_0.xlsx")
 
-# Read sheets
-table_0 = list({sheet_name: table_0.parse(sheet_name) for sheet_name in table_0.sheet_names}.values())[0]
-table_2 = list({sheet_name: table_2.parse(sheet_name) for sheet_name in table_2.sheet_names}.values())[0]
+def find_files(prefix: str, directory: str) -> Generator[str, None, None]:
+    """
+    Returns generator with all files that starts with the specified prefix from directory.
+    """
+    for file in os.listdir(directory):
+        if file.startswith(prefix):
+            yield str(os.path.join(directory, file))
 
-print(table_0.head())
-print(table_1.head())
-print(table_2.head())
+
+def read_file(filepath: str, sheet_name: Optional[str] = None) -> pd.DataFrame | dict[Any, pd.DataFrame]:
+    """
+    Reads csv or xmls file. Returns dataframe. Reads the specified sheet (sheet_name) or all.
+    """
+
+    file_name, file_extension = os.path.splitext(filepath)
+
+    if file_extension == '.csv':
+        return pd.read_csv(filepath)
+    elif file_extension == ".xlsx":
+        return pd.read_excel(filepath, sheet_name=sheet_name)
+    else:
+        raise ValueError(f"File extension '{file_extension}' is not supported.")
+
+
+filename_prefix = "Table_"
+data_directory = "./data"
+sheet_name = "Sheet1"  # Always get data from Sheet1, we can potentially use all sheets, first sheet etc.
+
+files = find_files(prefix=filename_prefix, directory=data_directory)
+for file in files:
+    print(read_file(file, sheet_name=sheet_name).head())
+
+
