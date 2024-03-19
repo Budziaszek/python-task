@@ -1,5 +1,6 @@
+import csv
 import os
-from typing import Optional, Any, Generator
+from typing import Optional, Any, Generator, Dict
 
 import numpy as np
 import pandas as pd
@@ -58,30 +59,65 @@ def count_business_days(business_days: CustomBusinessDay, start_date: pd.Timesta
     """
     if pd.isnull(start_date) or pd.isnull(end_date):
         return np.datetime64('NaT')
-    return len(pd.date_range(start_date, end_date, freq=business_days)) - 1
+    return len(pd.date_range(start_date, end_date, freq=business_days))
 
 
-filename_prefix = "Table_"
-data_directory = ".\\data"
-sheet_name = "Sheet1"  # Always get data from Sheet1, we can potentially use all sheets, first sheet etc.
+def convert_currency(
+        amount: float,
+        from_currency: str,
+        to_currency: str,
+        currency_rates_usd:
+        Dict[str, float]) -> float:
+    return round((amount / currency_rates_usd[from_currency]) * currency_rates[to_currency], 2)
 
-files = find_files(prefix=filename_prefix, directory=data_directory)
-df = pd.concat([read_file(file, sheet_name=sheet_name) for file in files])
 
-df.drop_duplicates(inplace=True)
+if __name__ == "__main__":
+    filename_prefix = "Table_"
+    data_directory = ".\\data"
+    output_directory = ".\\results"
+    sheet_name = "Sheet1"  # Always get data from Sheet1, we can potentially use all sheets, first sheet etc.
+    acctg_date_column = 'Acctg Date'
+    date_column = 'Date'
+    amount_column = 'Amount'
+    currency_column = "Currency"
+    type_column = "Type"
+    currency_file = "FXrates.csv"
 
-print(f"Number of null values:\n {df.isnull().sum()}\n")
-numeric_columns = df.select_dtypes(include=np.number).columns
-df[numeric_columns] = df[numeric_columns].fillna(value=1337)
+    files = find_files(prefix=filename_prefix, directory=data_directory)
+    df = pd.concat([read_file(file, sheet_name=sheet_name) for file in files])
 
-acctg_date_column = 'Acctg Date'
-date_column = 'Date'
-date_columns = [acctg_date_column, date_column]
-df[date_columns] = df[date_columns].apply(pd.to_datetime)
-df['Period'] = df[acctg_date_column] - df[date_column]
-business_days = CDay(calendar=HolidaysUK())
-df["Period Business Days"] = df.apply(
-    lambda row: count_business_days(business_days=business_days,
-                                    start_date=row[acctg_date_column],
-                                    end_date=row[date_column]), axis=1)
+    df.drop_duplicates(inplace=True)
+
+    print(f"Number of null values:\n {df.isnull().sum()}\n")
+    numeric_columns = df.select_dtypes(include=np.number).columns
+    df[numeric_columns] = df[numeric_columns].fillna(value=1337)
+
+    date_columns = [acctg_date_column, date_column]
+    df[date_columns] = df[date_columns].apply(pd.to_datetime)
+
+    df['Period'] = df[acctg_date_column] - df[date_column]
+    # Use custom calendar
+    business_days = CDay(calendar=HolidaysUK())
+    df["Period Business Days"] = df.apply(
+        lambda row: count_business_days(
+            business_days=business_days,
+            start_date=row[acctg_date_column],
+            end_date=row[date_column]),
+        axis=1)
+
+    # Read currency data
+    with open(os.path.join(data_directory, currency_file)) as f:
+        currency_data = csv.reader(f)
+        next(currency_data)
+        currency_rates = {key: float(value) for key, value in currency_data}
+
+    # Converting amount (inplace, changing currency column)
+    df[amount_column] = df.apply(
+        lambda row: convert_currency(
+            amount=row[amount_column],
+            from_currency=row[currency_column],
+            to_currency="PLN",
+            currency_rates_usd=currency_rates),
+        axis=1)
+    df[currency_column] = "PLN"
 
