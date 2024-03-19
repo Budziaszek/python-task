@@ -112,12 +112,26 @@ if __name__ == "__main__":
         currency_rates = {key: float(value) for key, value in currency_data}
 
     # Converting amount (inplace, changing currency column)
-    df[amount_column] = df.apply(
+    df[amount_column + "PLN"] = df.apply(
         lambda row: convert_currency(
             amount=row[amount_column],
             from_currency=row[currency_column],
             to_currency="PLN",
             currency_rates_usd=currency_rates),
         axis=1)
-    df[currency_column] = "PLN"
+    # df[currency_column] = "PLN"
 
+    unique = df[type_column].unique()
+    grouped = df.groupby(df[type_column])
+
+    if not os.path.exists(output_directory):
+        os.mkdir(output_directory)
+
+    for u in unique:
+        # Need to do something with special chars
+        # Note: Using ASCII representation to make sure no file will be overwritten.
+        #       Best solution should be discussed. Personally, I would consider removing polish chars.
+        u_modified = ''.join([c if c.isalnum() else str(ord(c)) for c in u])
+        print(u, u_modified)
+        filename = os.path.join(output_directory, f"Table_{u_modified}.xlsx")
+        grouped.get_group(u).to_excel(filename)
