@@ -42,4 +42,10 @@ print(f"Number of null values:\n {df.isnull().sum()}\n")
 numeric_columns = df.select_dtypes(include=np.number).columns
 df[numeric_columns] = df[numeric_columns].fillna(value=1337)
 
+acctg_date_column = 'Acctg Date'
+date_column = 'Date'
+date_columns = [acctg_date_column, date_column]
+df[date_columns] = df[date_columns].apply(pd.to_datetime)
+df['Period'] = df['Acctg Date'] - df['Date']
+
 
