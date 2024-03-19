@@ -29,11 +29,15 @@ def read_file(filepath: str, sheet_name: Optional[str] = None) -> pd.DataFrame |
 
 
 filename_prefix = "Table_"
-data_directory = "./data"
+data_directory = ".\\data"
 sheet_name = "Sheet1"  # Always get data from Sheet1, we can potentially use all sheets, first sheet etc.
 
 files = find_files(prefix=filename_prefix, directory=data_directory)
 for file in files:
-    print(read_file(file, sheet_name=sheet_name).head())
+    df: pd.DataFrame = read_file(file, sheet_name=sheet_name)
+    df.drop_duplicates(inplace=True)
+
+    print(f"Number of null values. File='{file}'\n {df.isnull().sum()}\n")
+
 
 
