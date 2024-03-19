@@ -1,5 +1,5 @@
 import os
-from typing import Optional, Any, Generator
+from typing import Optional, Any, Generator, List
 
 import pandas as pd
 
@@ -33,11 +33,10 @@ data_directory = ".\\data"
 sheet_name = "Sheet1"  # Always get data from Sheet1, we can potentially use all sheets, first sheet etc.
 
 files = find_files(prefix=filename_prefix, directory=data_directory)
-for file in files:
-    df: pd.DataFrame = read_file(file, sheet_name=sheet_name)
-    df.drop_duplicates(inplace=True)
+df = pd.concat([read_file(file, sheet_name=sheet_name) for file in files])
 
-    print(f"Number of null values. File='{file}'\n {df.isnull().sum()}\n")
+df.drop_duplicates(inplace=True)
+print(f"Number of null values:'\n {df.isnull().sum()}\n")
 
 
 
