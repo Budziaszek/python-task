@@ -1,6 +1,6 @@
 import csv
 import os
-from typing import Optional, Any, Generator, Dict
+from typing import Generator, Dict
 
 import numpy as np
 import pandas as pd
@@ -15,6 +15,8 @@ from pandas.tseries.holiday import (
     MO
 )
 
+from task.shared import read_file
+
 
 def find_files(prefix: str, directory: str) -> Generator[str, None, None]:
     """
@@ -23,21 +25,6 @@ def find_files(prefix: str, directory: str) -> Generator[str, None, None]:
     for file in os.listdir(directory):
         if file.startswith(prefix):
             yield str(os.path.join(directory, file))
-
-
-def read_file(filepath: str, sheet_name: Optional[str] = None) -> pd.DataFrame | dict[Any, pd.DataFrame]:
-    """
-    Reads csv or xmls file. Returns dataframe. Reads the specified sheet (sheet_name) or all.
-    """
-
-    file_name, file_extension = os.path.splitext(filepath)
-
-    if file_extension == '.csv':
-        return pd.read_csv(filepath)
-    elif file_extension == ".xlsx":
-        return pd.read_excel(filepath, sheet_name=sheet_name)
-    else:
-        raise ValueError(f"File extension '{file_extension}' is not supported.")
 
 
 class HolidaysUK(AbstractHolidayCalendar):
