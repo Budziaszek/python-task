@@ -4,11 +4,9 @@ from typing import Any, Dict
 
 
 def _decoder(mapping: Dict[str, Any], message: str, word_separator: str, letter_separator: str):
-    words = message.split(word_separator)
     r = []
-    for word in words:
-        letters = word.split(letter_separator)
-        for letter in letters:
+    for word in message.split(word_separator):
+        for letter in word.split(letter_separator):
             if letter not in mapping:
                 raise ValueError("Message cannot be decoded!")
             r.append(mapping[letter])
